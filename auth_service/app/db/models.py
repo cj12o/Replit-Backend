@@ -5,9 +5,9 @@ from typing import Annotated
 
 class User(SQLModel,table=True):
     id:int|None=Field(default=None,primary_key=True)
-    email_id:str=Field(default=str,index=True,unique=True)
-    password:str=Field(default=str,index=True)
-
+    username:str=Field(default=str,unique=True,index=True)
+    password:str=Field(default=str)
+    active:bool=Field(default=False)
 
 
 class create_db_and_tables():
