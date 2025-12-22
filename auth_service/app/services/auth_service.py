@@ -34,7 +34,6 @@ def get_user(username:str,session:Session):
 def get_current_user(token:Annotated[str,Depends(oauth2_scheme)],session:Annotated[Session,Depends(getSession)]):
     try:
         payload=decodeJwtToken(token)
-        print(f"✅✅Payload:{payload}")
         if payload is None:
             raise credentials_exception
         username=payload.get("sub")
