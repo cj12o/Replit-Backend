@@ -1,10 +1,26 @@
 from fastapi import FastAPI,WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 from .core.teminal import run_in_terminal
 from .schema.ws_schema import websocket_Request,websocket_Response
+from  dotenv import load_dotenv
 import json
+import os
+
+load_dotenv()
+
+url_1=str(os.getenv("ALLOWED_ORIGIN_1"))
 
 app=FastAPI()
 
+origins=[url_1]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["Content-Type","Authorization"],
+)
 
 @app.get("/")
 async def root():

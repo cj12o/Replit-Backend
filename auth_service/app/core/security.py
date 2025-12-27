@@ -1,57 +1,38 @@
-#this file :
-# handles hashing and jwt encoding + decoding
-
 from pwdlib import PasswordHash
-import jwt
-from fastapi import Depends,HTTPException,status
 from datetime import timedelta,datetime,timezone
-from typing import Annotated
-from dotenv import load_dotenv
+import jwt
 import os
 
-load_dotenv()
-
-SECRET_KEY=os.getenv("SECRET_KEY")
-ALGORITHM=os.getenv("ALGORITHM","")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES",15))
+SECRET_KEY = str(os.getenv("SECRET_KEY"))
+ALGORITHM = str(os.getenv("ALGORITHM"))
+ACCESS_TOKEN_EXPIRE_MINUTES = float(str(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")))
 
 password_hash=PasswordHash.recommended()
 
 
-def verifyPassword(orginal_pass:str,hashed_pass:str)->bool:
-    "verify hashed password" 
-    return password_hash.verify(orginal_pass,hashed_pass)
+def get_hashed_password(password:str)->str:
+    return password_hash.hash(password)
+
+def verify_password(plain_password:str,hashed_password:str):
+    return password_hash.verify(plain_password,hashed_password)
 
 
-def getHashedPassword(orginal_pass:str)->str:
-    "returns hashed password"
-    return password_hash.hash(orginal_pass)
+def create_access_token(sub:str,expires_delta:timedelta|None=None):
+    "returns a JWT"
 
+    if expires_delta is not None:
+        expiry=datetime.now(timezone.utc) + expires_delta
+    else:
+        expiry=datetime.now(timezone.utc)+timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-def createJwtToken(data:dict,expires_delta:timedelta|None=None)->str|None:
-    "creates and returns JWT Token"
-    try:
-        data_to_encode=data.copy()
-        if expires_delta is not None:
-            expire=datetime.now(timezone.utc) + expires_delta
-        else:
-            expire=datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-
-        data_to_encode.update({"exp":expire})
-        encoded_jwt=jwt.encode(data_to_encode,SECRET_KEY,ALGORITHM)
-        return encoded_jwt
-    except Exception as e:
-        print(f"Error in creatJwtToken :{str(e)}")
-        return None
-
-def decodeJwtToken(token:str):
-    "decodes JWT Token returns Payload"
-    try:
-        payload=jwt.decode(token,SECRET_KEY,[ALGORITHM])
-        return payload
-    except Exception as e:
-        print(f"Error in decoding JWT token:{str(e)}")
-        return None
+    to_encode={"sub":sub,"exp":int(expiry.timestamp())} #note :exp ,not any other name as exp gets automatically enforced by libs
+    encoded_jwt=jwt.encode(payload=to_encode,key=SECRET_KEY,algorithm=ALGORITHM)
+    return encoded_jwt
     
 
+def get_username(token:str):
+    "returns a username by decoding jwt"
+    payload=jwt.decode(jwt=token,key=SECRET_KEY,algorithms=ALGORITHM)
+    username=payload.get("sub")
+    return username
 
