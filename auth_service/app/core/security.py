@@ -2,6 +2,8 @@ from pwdlib import PasswordHash
 from datetime import timedelta,datetime,timezone
 import jwt
 import os
+from fastapi import HTTPException,status
+from jose import JWTError
 
 SECRET_KEY = str(os.getenv("SECRET_KEY"))
 ALGORITHM = str(os.getenv("ALGORITHM"))
@@ -32,7 +34,22 @@ def create_access_token(sub:str,expires_delta:timedelta|None=None):
 
 def get_username(token:str):
     "returns a username by decoding jwt"
-    payload=jwt.decode(jwt=token,key=SECRET_KEY,algorithms=ALGORITHM)
-    username=payload.get("sub")
-    return username
-
+    try:
+        payload=jwt.decode(jwt=token,key=SECRET_KEY,algorithms=ALGORITHM)
+        username=payload.get("sub")
+        return username
+    except jwt.exceptions.DecodeError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )

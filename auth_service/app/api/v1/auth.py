@@ -5,11 +5,12 @@ from app.service.user_service import create_user,get_user_by_username,get_user_b
 from  fastapi import HTTPException,Depends
 from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
-from app.core.security import verify_password,create_access_token
+from app.core.security import verify_password,create_access_token,get_username
 from app.errors import error_types
+from fastapi.security import OAuth2PasswordBearer
 
 router=APIRouter(prefix="/auth")
-
+outh_scheme=OAuth2PasswordBearer(tokenUrl="")
 
 @router.post("/signup",response_model=UserResponse)
 async def signup(user_data:UserCreation,sesh:sessionDep):
@@ -36,22 +37,9 @@ async def login(form_data:Annotated[OAuth2PasswordRequestForm,Depends()],sesh:se
 
     return {"access_token":access_token,"token_type": "bearer"}
     
-
-@router.post("/login")
-async def login(form_data:Annotated[OAuth2PasswordRequestForm,Depends()],sesh:sessionDep):
-    password=form_data.password
-    username=form_data.username
+@router.get("/check_login_status")
+async def check_login_status(sesh:sessionDep,token:Annotated[str,Depends(outh_scheme)]):
+    username=get_username(token)
     user=await get_user_by_username(sesh,username)
-    if not user: 
-        raise error_types.INVALID_CRED_ERROR
-    if not verify_password(password,user.hashed_password):
-        raise error_types.INVALID_CRED_ERROR
+    return {"msg":f"{user.username} is logged in"}
     
-    access_token=create_access_token(user.username)
-
-    return {"access_token":access_token,"token_type": "bearer"}
-    
-
-
-
-

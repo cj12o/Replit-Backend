@@ -13,6 +13,11 @@ async def get_user_by_email(sesh:sessionDep,email_id:str):
 
 async def get_user_by_username(sesh:sessionDep,username:str):
     user=sesh.exec(select(User).where(username==User.username)).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
     return user
 
 async def get_user_by_userid(sesh:sessionDep,userid:int):
